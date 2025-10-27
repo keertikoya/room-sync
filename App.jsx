@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar } from 'lucide-react';
+import { 
+  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check
+} from 'lucide-react';
 
 // Define the base URL for our Express backend
 const API_BASE_URL = '/api/tasks';
 
-// Simple utility to format dates
+// A simple utility to format dates nicely
 const formatDate = (dateString) => {
   if (!dateString) return 'No Due Date';
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -14,6 +16,7 @@ const formatDate = (dateString) => {
   });
 };
 
+// TaskItem Component
 const TaskItem = ({ task }) => (
   <div className={`p-4 mb-3 rounded-xl shadow-lg transition-all duration-300 ease-in-out ${
     task.isCompleted 
@@ -54,12 +57,159 @@ const TaskItem = ({ task }) => (
 );
 
 
+// AddTaskForm Component
+const AddTaskForm = ({ onTaskAdded }) => {
+  const [taskData, setTaskData] = useState({
+    description: '',
+    assignedTo: '',
+    dueDate: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  // Hardcoded roommate options for now
+  const roommates = ['Alex', 'Beatrice', 'Carmen', 'Denise'];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setTaskData(prev => ({ ...prev, [name]: value }));
+    setSubmitError(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!taskData.description || !taskData.assignedTo) {
+        setSubmitError("Description and Roommate are required.");
+        return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const payload = {
+        ...taskData,
+        dueDate: taskData.dueDate || null, 
+    };
+
+    try {
+      const response = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // Clear the form and notify parent to refresh
+      setTaskData({ description: '', assignedTo: '', dueDate: '' });
+      onTaskAdded(); 
+
+    } catch (err) {
+      console.error("Error creating task:", err);
+      setSubmitError(`Failed to create task: ${err.message}. Check server logs.`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="p-6 bg-indigo-50 border-2 border-indigo-200 rounded-xl shadow-inner">
+      <h3 className="text-xl font-bold text-indigo-700 mb-4 flex items-center">
+        <Plus className="w-5 h-5 mr-2" />
+        Add New Chore
+      </h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700">Chore Description</label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            value={taskData.description}
+            onChange={handleChange}
+            placeholder="e.g., Clean kitchen counter & sink"
+            required
+            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <label htmlFor="assignedTo" className="block text-sm font-medium text-gray-700">Assign To</label>
+              <div className="relative mt-1">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-400" />
+                <select
+                  id="assignedTo"
+                  name="assignedTo"
+                  value={taskData.assignedTo}
+                  onChange={handleChange}
+                  required
+                  className="block w-full rounded-lg border-gray-300 shadow-sm p-3 pl-10 focus:border-indigo-500 focus:ring-indigo-500 appearance-none"
+                >
+                  <option value="" disabled>Select Roommate</option>
+                  {roommates.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex-1">
+              <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">Due Date (Optional)</label>
+              <input
+                type="date"
+                id="dueDate"
+                name="dueDate"
+                value={taskData.dueDate}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 focus:border-indigo-500 focus:ring-indigo-500"
+              />
+            </div>
+        </div>
+
+        {submitError && (
+          <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm flex items-center">
+            <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
+            {submitError}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-md text-base font-medium text-white transition duration-150 ease-in-out ${
+            isSubmitting 
+              ? 'bg-indigo-400 cursor-not-allowed' 
+              : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Adding Task...
+            </>
+          ) : (
+            <>
+              <Send className="w-5 h-5 mr-2" />
+              Add Chore to List
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+
+// App Component
 const App = () => {
-  // State for storing the list of tasks
   const [tasks, setTasks] = useState([]);
-  // State for loading indicator
   const [loading, setLoading] = useState(true);
-  // State for error messages
   const [error, setError] = useState(null);
 
   // Function to fetch tasks from the backend API
@@ -74,7 +224,20 @@ const App = () => {
       }
       
       const data = await response.json();
-      setTasks(data);
+      
+      // Sort tasks: Incomplete tasks first, then by due date
+      const sortedTasks = data.sort((a, b) => {
+        // First: Incomplete tasks first
+        if (a.isCompleted !== b.isCompleted) {
+            return a.isCompleted ? 1 : -1;
+        }
+        // Second: By due date (null/undefined dates go last)
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        return dateA - dateB;
+      });
+
+      setTasks(sortedTasks);
     } catch (err) {
       console.error("Error fetching tasks:", err);
       setError('Could not connect to backend server or fetch data. Please ensure your Express server is running and accessible.');
@@ -103,9 +266,15 @@ const App = () => {
 
         {/* Main Content Area */}
         <main className="mt-8">
+
+          {/* Task Creation Form */}
+          <div className="mb-10">
+              <AddTaskForm onTaskAdded={fetchTasks} />
+          </div>
+
           <h2 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-2 flex items-center">
             <ClipboardList className="w-6 h-6 mr-2 text-indigo-500" />
-            Current Chores
+            Current Chores ({tasks.filter(t => !t.isCompleted).length} pending)
           </h2>
 
           {/* Loading, Error, or Task List */}
@@ -121,7 +290,7 @@ const App = () => {
             </div>
           ) : tasks.length === 0 ? (
             <div className="p-6 text-center bg-white rounded-xl shadow-lg text-gray-500">
-              <p className="text-xl">No tasks yet! Time to add some chores.</p>
+              <p className="text-xl">No tasks yet! Use the form above to add your first chore.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -134,7 +303,7 @@ const App = () => {
           {/* Placeholder for future features */}
           <div className="mt-10 pt-6 border-t">
             <p className="text-center text-gray-500 text-sm">
-              Task Form & Bill Splitting Calculator will be built here next!
+              Mark complete functionality and the Bill Splitting Calculator
             </p>
           </div>
         </main>
