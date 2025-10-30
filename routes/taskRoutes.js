@@ -5,7 +5,7 @@ const router = express.Router(); // Use Express Router to manage routes
 const Task = require('../models/Task'); // Import the Mongoose Task model
 
 // Temp hardcoding of householdId until user auth is implemented
-const DEMO_HOUSEHOLD_ID = "dormsync_house_123";
+const DEMO_HOUSEHOLD_ID = "roomsync_house_123";
 
 // Controller functions
 

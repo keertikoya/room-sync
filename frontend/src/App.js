@@ -283,7 +283,7 @@ const App = () => {
         <header className="py-6 text-center">
           <h1 className="text-5xl font-extrabold text-indigo-700 tracking-tight flex items-center justify-center">
             <Home className="w-10 h-10 mr-3 text-indigo-500" />
-            DormSync
+            RoomSync
           </h1>
           <p className="mt-2 text-xl text-gray-600">Shared Household Task Manager</p>
         </header>
