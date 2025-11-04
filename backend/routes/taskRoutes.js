@@ -110,4 +110,27 @@ router.delete('/:id', async (req, res) => {
 });
 
 
+// PATCH update task completion status
+router.patch('/:id', async (req, res) => {
+    try {
+        const task = await Task.findOne({ 
+            _id: req.params.id, 
+            householdId: DEMO_HOUSEHOLD_ID 
+        });
+        
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        
+        task.isCompleted = !task.isCompleted;
+        task.completedAt = task.isCompleted ? new Date() : null;
+        
+        const updatedTask = await task.save();
+        res.json(updatedTask);
+    } catch (error) {
+        console.error('Error toggling task:', error);
+        res.status(400).json({ message: error.message });
+    }
+});
+
 module.exports = router;

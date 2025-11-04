@@ -17,7 +17,7 @@ const formatDate = (dateString) => {
 };
 
 // TaskItem Component
-const TaskItem = ({ task }) => (
+const TaskItem = ({ task, onToggleComplete }) => (
   <div className={`p-4 mb-3 rounded-xl shadow-lg transition-all duration-300 ease-in-out ${
     task.isCompleted 
       ? 'bg-green-50 border-l-4 border-green-500 opacity-70' 
@@ -43,19 +43,24 @@ const TaskItem = ({ task }) => (
           </span>
         )}
 
-        {/* Status */}
-        <div className={`p-2 rounded-full ${task.isCompleted ? 'bg-green-500' : 'bg-gray-300'}`}>
+        {/* Status Button */}
+        <button
+          onClick={() => onToggleComplete(task._id)}
+          className={`p-2 rounded-full transition-all hover:scale-110 ${
+            task.isCompleted ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 hover:bg-gray-400'
+          }`}
+          title={task.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+        >
           {task.isCompleted ? (
             <CheckCircle className="w-5 h-5 text-white" />
           ) : (
             <Clock className="w-5 h-5 text-gray-700" />
           )}
-        </div>
+        </button>
       </div>
     </div>
   </div>
 );
-
 
 // AddTaskForm Component
 const AddTaskForm = ({ onTaskAdded }) => {
@@ -246,6 +251,25 @@ const App = () => {
     }
   };
 
+  // Function to toggle task completion
+  const toggleTaskComplete = async (taskId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh the task list
+      fetchTasks();
+    } catch (err) {
+      console.error("Error toggling task:", err);
+    }
+  };
+
   // useEffect hook runs once after the component mounts
   useEffect(() => {
     fetchTasks();
@@ -295,7 +319,7 @@ const App = () => {
           ) : (
             <div className="space-y-4">
               {tasks.map((task) => (
-                <TaskItem key={task._id} task={task} />
+              <TaskItem key={task._id} task={task} onToggleComplete={toggleTaskComplete} />
               ))}
             </div>
           )}
