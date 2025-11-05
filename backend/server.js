@@ -32,7 +32,7 @@ app.use(express.json());
 
 // Simple root route for testing
 app.get('/', (req, res) => {
-    res.json({ message: "DormSync Server is running and ready for API routes" });
+    res.json({ message: "RoomSync Server is running and ready for API routes" });
 });
 
 // Link the task router to the /api/tasks endpoint

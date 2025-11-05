@@ -17,7 +17,7 @@ const formatDate = (dateString) => {
 };
 
 // TaskItem Component
-const TaskItem = ({ task, onToggleComplete }) => (
+const TaskItem = ({ task, onToggleComplete, onDelete }) => (
   <div className={`p-4 mb-3 rounded-xl shadow-lg transition-all duration-300 ease-in-out ${
     task.isCompleted 
       ? 'bg-green-50 border-l-4 border-green-500 opacity-70' 
@@ -56,6 +56,15 @@ const TaskItem = ({ task, onToggleComplete }) => (
           ) : (
             <Clock className="w-5 h-5 text-gray-700" />
           )}
+        </button>
+
+        {/* Delete Button */}
+        <button
+          onClick={() => onDelete(task._id)}
+          className="p-2 rounded-full bg-red-500 hover:bg-red-600 transition-all hover:scale-110"
+          title="Delete task"
+        >
+          <AlertTriangle className="w-5 h-5 text-white" />
         </button>
       </div>
     </div>
@@ -270,6 +279,28 @@ const App = () => {
     }
   };
 
+  // Function to delete a task
+  const deleteTask = async (taskId) => {
+  if (!window.confirm('Are you sure you want to delete this task?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/${taskId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Refresh the task list
+    fetchTasks();
+  } catch (err) {
+    console.error("Error deleting task:", err);
+  }
+};
+
   // useEffect hook runs once after the component mounts
   useEffect(() => {
     fetchTasks();
@@ -319,7 +350,12 @@ const App = () => {
           ) : (
             <div className="space-y-4">
               {tasks.map((task) => (
-              <TaskItem key={task._id} task={task} onToggleComplete={toggleTaskComplete} />
+              <TaskItem 
+              key={task._id} 
+              task={task} 
+              onToggleComplete={toggleTaskComplete}
+              onDelete={deleteTask}
+            />
               ))}
             </div>
           )}
