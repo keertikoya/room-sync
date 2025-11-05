@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check
+  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check, X
 } from 'lucide-react';
 
 // Define the base URL for our Express backend
@@ -64,7 +64,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete }) => (
           className="p-2 rounded-full bg-red-500 hover:bg-red-600 transition-all hover:scale-110"
           title="Delete task"
         >
-          <AlertTriangle className="w-5 h-5 text-white" />
+          <X className="w-5 h-5 text-white" />
         </button>
       </div>
     </div>

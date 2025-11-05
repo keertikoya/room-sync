@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check
+  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check, X
 } from 'lucide-react';
 
 // Define the base URL Express backend
