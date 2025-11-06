@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check, X
+  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check, X, Edit
 } from 'lucide-react';
 
 // Define the base URL for our Express backend
@@ -17,59 +17,132 @@ const formatDate = (dateString) => {
 };
 
 // TaskItem Component
-const TaskItem = ({ task, onToggleComplete, onDelete }) => (
-  <div className={`p-4 mb-3 rounded-xl shadow-lg transition-all duration-300 ease-in-out ${
-    task.isCompleted 
-      ? 'bg-green-50 border-l-4 border-green-500 opacity-70' 
-      : 'bg-white border-l-4 border-indigo-500 hover:shadow-xl'
-  }`}>
-    <div className="flex justify-between items-center">
-      <div className="flex-1 min-w-0">
-        <p className={`text-lg font-semibold truncate ${task.isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-          {task.description}
-        </p>
-        <div className="flex items-center space-x-3 text-sm mt-1 text-gray-600">
-          <Clock className="w-4 h-4 text-indigo-400" />
-          <span>Assigned to: <span className="font-medium text-indigo-600">{task.assignedTo}</span></span>
+const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSaveEdit, onCancelEdit, onEditChange }) => {
+  const isEditing = editingTask && editingTask.id === task._id;
+  const roommates = ['Alex', 'Beatrice', 'Carmen', 'Denise'];
+
+  if (isEditing) {
+    return (
+      <div className="p-4 mb-3 rounded-xl shadow-lg bg-blue-50 border-l-4 border-blue-500">
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={editingTask.description}
+            onChange={(e) => onEditChange({ ...editingTask, description: e.target.value })}
+            className="w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm"
+            placeholder="Task description"
+          />
+          
+          <div className="flex gap-3">
+            <select
+              value={editingTask.assignedTo}
+              onChange={(e) => onEditChange({ ...editingTask, assignedTo: e.target.value })}
+              className="flex-1 rounded-lg border-gray-300 shadow-sm p-2 text-sm"
+            >
+              {roommates.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            
+            <input
+              type="date"
+              value={editingTask.dueDate}
+              onChange={(e) => onEditChange({ ...editingTask, dueDate: e.target.value })}
+              className="flex-1 rounded-lg border-gray-300 shadow-sm p-2 text-sm"
+            />
+          </div>
+          
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={onSaveEdit}
+              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-all"
+            >
+              Save
+            </button>
+            <button
+              onClick={onCancelEdit}
+              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-all"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
-      
-      <div className="flex items-center space-x-4 ml-4">
-        {/* Due Date */}
-        {task.dueDate && (
-          <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-            <Calendar className="w-3 h-3 mr-1" />
-            {formatDate(task.dueDate)}
-          </span>
-        )}
+    );
+  }
 
-        {/* Status Button */}
-        <button
-          onClick={() => onToggleComplete(task._id)}
-          className={`p-2 rounded-full transition-all hover:scale-110 ${
-            task.isCompleted ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 hover:bg-gray-400'
-          }`}
-          title={task.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
-        >
-          {task.isCompleted ? (
-            <CheckCircle className="w-5 h-5 text-white" />
-          ) : (
-            <Clock className="w-5 h-5 text-gray-700" />
+  return (
+    <div className={`p-4 mb-3 rounded-xl shadow-lg transition-all duration-300 ease-in-out ${
+      task.isCompleted 
+        ? 'bg-green-50 border-l-4 border-green-500 opacity-70' 
+        : 'bg-white border-l-4 border-indigo-500 hover:shadow-xl'
+    }`}>
+      <div className="flex justify-between items-center">
+        <div className="flex-1 min-w-0">
+          <p className={`text-lg font-semibold truncate ${task.isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+            {task.description}
+          </p>
+          <div className="flex items-center space-x-3 text-sm mt-1 text-gray-600">
+            <Clock className="w-4 h-4 text-indigo-400" />
+            <span>Assigned to: <span className="font-medium text-indigo-600">{task.assignedTo}</span></span>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2 ml-4">
+          {/* Due Date */}
+          {task.dueDate && (
+            <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+              <Calendar className="w-3 h-3 mr-1" />
+              {formatDate(task.dueDate)}
+            </span>
           )}
-        </button>
 
-        {/* Delete Button */}
-        <button
-          onClick={() => onDelete(task._id)}
-          className="p-2 rounded-full bg-red-500 hover:bg-red-600 transition-all hover:scale-110"
-          title="Delete task"
-        >
-          <X className="w-5 h-5 text-white" />
-        </button>
+          {/* Edit Button */}
+          <button
+            onClick={() => onEdit(task)}
+            style={{ 
+              padding: '8px', 
+              borderRadius: '9999px', 
+              backgroundColor: '#3b82f6',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#2563eb'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#3b82f6'}
+            title="Edit task"
+          >
+            <Edit style={{ width: '20px', height: '20px', color: 'white' }} />
+          </button>
+          
+
+          {/* Status Button */}
+          <button
+            onClick={() => onToggleComplete(task._id)}
+            className={`p-2 rounded-full transition-all hover:scale-110 ${
+              task.isCompleted ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 hover:bg-gray-400'
+            }`}
+            title={task.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+          >
+            {task.isCompleted ? (
+              <CheckCircle className="w-5 h-5 text-white" />
+            ) : (
+              <Clock className="w-5 h-5 text-gray-700" />
+            )}
+          </button>
+
+          {/* Delete Button */}
+          <button
+            onClick={() => onDelete(task._id)}
+            className="p-2 rounded-full bg-red-500 hover:bg-red-600 transition-all hover:scale-110"
+            title="Delete task"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // AddTaskForm Component
 const AddTaskForm = ({ onTaskAdded }) => {
@@ -225,6 +298,7 @@ const App = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
 
   // Function to fetch tasks from the backend API
   const fetchTasks = async () => {
@@ -301,6 +375,52 @@ const App = () => {
   }
 };
 
+// Function to start editing a task
+const startEditTask = (task) => {
+  setEditingTask({
+    id: task._id,
+    description: task.description,
+    assignedTo: task.assignedTo,
+    dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+  });
+};
+
+// Function to save edited task
+const saveEditTask = async () => {
+  if (!editingTask.description || !editingTask.assignedTo) {
+    alert('Description and Roommate are required.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/${editingTask.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        description: editingTask.description,
+        assignedTo: editingTask.assignedTo,
+        dueDate: editingTask.dueDate || null,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Clear editing state and refresh
+    setEditingTask(null);
+    fetchTasks();
+  } catch (err) {
+    console.error("Error updating task:", err);
+    alert('Failed to update task');
+  }
+};
+
+// Function to cancel editing
+const cancelEdit = () => {
+  setEditingTask(null);
+};
+
   // useEffect hook runs once after the component mounts
   useEffect(() => {
     fetchTasks();
@@ -355,6 +475,11 @@ const App = () => {
               task={task} 
               onToggleComplete={toggleTaskComplete}
               onDelete={deleteTask}
+              onEdit={startEditTask}
+              editingTask={editingTask}
+              onSaveEdit={saveEditTask}
+              onCancelEdit={cancelEdit}
+              onEditChange={setEditingTask}
             />
               ))}
             </div>
