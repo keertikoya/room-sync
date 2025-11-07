@@ -88,7 +88,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
           </div>
         </div>
         
-        <div className="flex items-center space-x-2 ml-4">
+        <div className="flex items-center space-x-3 ml-4">
           {/* Due Date */}
           {task.dueDate && (
             <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
