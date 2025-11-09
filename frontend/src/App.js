@@ -61,18 +61,44 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
             </div>
           </div>
           
-          <div className="flex gap-3 justify-end pt-5">
-            <button
+          <div className="flex gap-4 justify-end pt-3">
+          <button
               onClick={onSaveEdit}
-              className="px-10 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-base font-semibold transition-all shadow-md hover:shadow-lg"
+              style={{
+                padding: '12px 32px',
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                minWidth: '140px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#10b981'}
             >
-              💾 Save Changes
+              Save Changes
             </button>
             <button
               onClick={onCancelEdit}
-              className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-base font-semibold transition-all shadow-md hover:shadow-lg"
+              style={{
+                padding: '12px 32px',
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                minWidth: '140px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
             >
-              ✕ Cancel
+              Cancel
             </button>
           </div>
         </div>
