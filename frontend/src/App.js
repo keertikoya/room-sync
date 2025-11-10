@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check, X, Edit
+  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check, X, Edit, DollarSign
 } from 'lucide-react';
 
 // Define the base URL for our Express backend
@@ -327,6 +327,194 @@ const AddTaskForm = ({ onTaskAdded }) => {
   );
 };
 
+// BillSplitter Component
+const BillSplitter = () => {
+  const [billData, setBillData] = useState({
+    description: '',
+    totalAmount: '',
+    paidBy: '',
+    splitAmong: []
+  });
+  const [result, setResult] = useState(null);
+  
+  const roommates = ['Alex', 'Beatrice', 'Carmen', 'Denise'];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setBillData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (roommate) => {
+    setBillData(prev => ({
+      ...prev,
+      splitAmong: prev.splitAmong.includes(roommate)
+        ? prev.splitAmong.filter(r => r !== roommate)
+        : [...prev.splitAmong, roommate]
+    }));
+  };
+
+  const calculateSplit = (e) => {
+    e.preventDefault();
+    
+    if (!billData.totalAmount || !billData.paidBy || billData.splitAmong.length === 0) {
+      alert('Please fill in all fields and select at least one person to split among');
+      return;
+    }
+
+    const total = parseFloat(billData.totalAmount);
+    const perPerson = total / billData.splitAmong.length;
+    
+    const owes = billData.splitAmong
+      .filter(person => person !== billData.paidBy)
+      .map(person => ({
+        name: person,
+        amount: perPerson
+      }));
+
+    setResult({
+      total,
+      perPerson,
+      paidBy: billData.paidBy,
+      owes
+    });
+  };
+
+  const resetForm = () => {
+    setBillData({
+      description: '',
+      totalAmount: '',
+      paidBy: '',
+      splitAmong: []
+    });
+    setResult(null);
+  };
+
+  return (
+    <div className="p-6 bg-green-50 border-2 border-green-200 rounded-xl shadow-inner">
+      <h3 className="text-xl font-bold text-green-700 mb-4 flex items-center">
+        <DollarSign className="w-5 h-5 mr-2" />
+        Bill Splitting Calculator
+      </h3>
+      
+      <form onSubmit={calculateSplit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Bill Description
+          </label>
+          <input
+            type="text"
+            name="description"
+            value={billData.description}
+            onChange={handleChange}
+            placeholder="e.g., Groceries, Utilities, etc."
+            required
+            className="w-full rounded-lg border-gray-300 shadow-sm p-3 focus:border-green-500 focus:ring-green-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Total Amount ($)
+            </label>
+            <input
+              type="number"
+              name="totalAmount"
+              value={billData.totalAmount}
+              onChange={handleChange}
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+              required
+              className="w-full rounded-lg border-gray-300 shadow-sm p-3 focus:border-green-500 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Paid By
+            </label>
+            <select
+              name="paidBy"
+              value={billData.paidBy}
+              onChange={handleChange}
+              required
+              className="w-full rounded-lg border-gray-300 shadow-sm p-3 focus:border-green-500 focus:ring-green-500"
+            >
+              <option value="">Select person</option>
+              {roommates.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Split Among (select all who should pay)
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {roommates.map(roommate => (
+              <label key={roommate} className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={billData.splitAmong.includes(roommate)}
+                  onChange={() => handleCheckboxChange(roommate)}
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <span className="text-sm font-medium text-gray-700">{roommate}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md"
+          >
+            Calculate Split
+          </button>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md"
+          >
+            Reset
+          </button>
+        </div>
+      </form>
+
+      {result && (
+        <div className="mt-6 p-4 bg-white rounded-lg border-2 border-green-300">
+          <h4 className="text-lg font-bold text-gray-800 mb-3">Split Breakdown</h4>
+          <div className="space-y-2 text-sm">
+            <p className="text-gray-700">
+              <span className="font-semibold">Total Bill:</span> ${result.total.toFixed(2)}
+            </p>
+            <p className="text-gray-700">
+              <span className="font-semibold">Per Person:</span> ${result.perPerson.toFixed(2)}
+            </p>
+            <p className="text-gray-700">
+              <span className="font-semibold">Paid by:</span> {result.paidBy}
+            </p>
+            
+            {result.owes.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <p className="font-semibold text-gray-800 mb-2">Who Owes {result.paidBy}:</p>
+                {result.owes.map(person => (
+                  <p key={person.name} className="text-green-700 font-medium">
+                    → {person.name} owes ${person.amount.toFixed(2)}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // App Component
 const App = () => {
@@ -520,10 +708,15 @@ const cancelEdit = () => {
             </div>
           )}
 
+          {/* Bill Splitting Calculator */}
+          <div className="mt-10">
+            <BillSplitter />
+          </div>
+
           {/* Placeholder for future features */}
           <div className="mt-10 pt-6 border-t">
             <p className="text-center text-gray-500 text-sm">
-              Mark complete functionality and the Bill Splitting Calculator
+              More features coming soon
             </p>
           </div>
         </main>
