@@ -242,7 +242,7 @@ const AddTaskForm = ({ onTaskAdded }) => {
     <div className="p-6 bg-indigo-50 border-2 border-indigo-200 rounded-xl shadow-inner">
       <h3 className="text-xl font-bold text-indigo-700 mb-4 flex items-center">
         <Plus className="w-5 h-5 mr-2" />
-        Add New Chore
+        Chore Tracker
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         
