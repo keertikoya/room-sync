@@ -10,6 +10,8 @@ const app = express();
 // Define the port the server will listen on
 const PORT = process.env.PORT || 5000;
 
+const authRoutes = require('./routes/authRoutes');
+
 const MONGO_URI = 'mongodb://localhost:27017/dormsyc_db'; 
 
 // Database connection
@@ -37,6 +39,8 @@ app.get('/', (req, res) => {
 
 // Link the task router to the /api/tasks endpoint
 app.use('/api/tasks', taskRoutes);
+
+app.use('/api/auth', authRoutes);
 
 // Start the server after connecting to the database
 connectDB().then(() => {
