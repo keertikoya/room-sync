@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, Check, X, Edit, DollarSign
+  Home, ClipboardList, CheckCircle, Clock, Loader2, AlertTriangle, Calendar, Plus, User, Send, X, Edit, DollarSign, LogOut
 } from 'lucide-react';
+import { useAuth } from './AuthContext';
+import AuthPages from './AuthPages';
+import HouseholdSetup from './HouseholdSetup';
 
 // Define the base URL for our Express backend
 const API_BASE_URL = '/api/tasks';
@@ -62,7 +65,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
           </div>
           
           <div className="flex gap-4 justify-end pt-3">
-          <button
+            <button
               onClick={onSaveEdit}
               style={{
                 padding: '12px 32px',
@@ -124,7 +127,6 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
         </div>
         
         <div className="flex items-center space-x-3 ml-4">
-          {/* Due Date */}
           {task.dueDate && (
             <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
               <Calendar className="w-3 h-3 mr-1" />
@@ -132,7 +134,6 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
             </span>
           )}
 
-          {/* Edit Button */}
           <button
             onClick={() => onEdit(task)}
             style={{ 
@@ -148,9 +149,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
           >
             <Edit style={{ width: '20px', height: '20px', color: 'white' }} />
           </button>
-          
 
-          {/* Status Button */}
           <button
             onClick={() => onToggleComplete(task._id)}
             className={`p-2 rounded-full transition-all hover:scale-110 ${
@@ -165,7 +164,6 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
             )}
           </button>
 
-          {/* Delete Button */}
           <button
             onClick={() => onDelete(task._id)}
             className="p-2 rounded-full bg-red-500 hover:bg-red-600 transition-all hover:scale-110"
@@ -180,7 +178,7 @@ const TaskItem = ({ task, onToggleComplete, onDelete, onEdit, editingTask, onSav
 };
 
 // AddTaskForm Component
-const AddTaskForm = ({ onTaskAdded }) => {
+const AddTaskForm = ({ onTaskAdded, token }) => {
   const [taskData, setTaskData] = useState({
     description: '',
     assignedTo: '',
@@ -189,7 +187,6 @@ const AddTaskForm = ({ onTaskAdded }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  // Hardcoded roommate options for now
   const roommates = ['Alex', 'Beatrice', 'Carmen', 'Denise'];
 
   const handleChange = (e) => {
@@ -216,7 +213,10 @@ const AddTaskForm = ({ onTaskAdded }) => {
     try {
       const response = await fetch(API_BASE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(payload),
       });
 
@@ -226,7 +226,6 @@ const AddTaskForm = ({ onTaskAdded }) => {
         throw new Error(data.message || `HTTP error! status: ${response.status}`);
       }
 
-      // Clear the form and notify parent to refresh
       setTaskData({ description: '', assignedTo: '', dueDate: '' });
       onTaskAdded(); 
 
@@ -518,17 +517,23 @@ const BillSplitter = () => {
 
 // App Component
 const App = () => {
+  const { user, token, logout, loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
 
-  // Function to fetch tasks from the backend API
-  const fetchTasks = async () => {
+  const fetchTasks = React.useCallback(async () => {
+    if (!token) return;
+    
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(API_BASE_URL);
+      const response = await fetch(API_BASE_URL, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -536,13 +541,10 @@ const App = () => {
       
       const data = await response.json();
       
-      // Sort tasks: Incomplete tasks first, then by due date
       const sortedTasks = data.sort((a, b) => {
-        // First: Incomplete tasks first
         if (a.isCompleted !== b.isCompleted) {
             return a.isCompleted ? 1 : -1;
         }
-        // Second: By due date (null/undefined dates go last)
         const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
         const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
         return dateA - dateB;
@@ -551,123 +553,156 @@ const App = () => {
       setTasks(sortedTasks);
     } catch (err) {
       console.error("Error fetching tasks:", err);
-      setError('Could not connect to backend server or fetch data. Please ensure your Express server is running and accessible.');
+      setError('Could not connect to backend server or fetch data.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  // Function to toggle task completion
   const toggleTaskComplete = async (taskId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Refresh the task list
       fetchTasks();
     } catch (err) {
       console.error("Error toggling task:", err);
     }
   };
 
-  // Function to delete a task
   const deleteTask = async (taskId) => {
-  if (!window.confirm('Are you sure you want to delete this task?')) {
-    return;
-  }
-  
-  try {
-    const response = await fetch(`${API_BASE_URL}/${taskId}`, {
-      method: 'DELETE',
-    });
+    if (!window.confirm('Are you sure you want to delete this task?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      fetchTasks();
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
+  };
+
+  const startEditTask = (task) => {
+    setEditingTask({
+      id: task._id,
+      description: task.description,
+      assignedTo: task.assignedTo,
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+    });
+  };
+
+  const saveEditTask = async () => {
+    if (!editingTask.description || !editingTask.assignedTo) {
+      alert('Description and Roommate are required.');
+      return;
     }
 
-    // Refresh the task list
-    fetchTasks();
-  } catch (err) {
-    console.error("Error deleting task:", err);
-  }
-};
+    try {
+      const response = await fetch(`${API_BASE_URL}/${editingTask.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          description: editingTask.description,
+          assignedTo: editingTask.assignedTo,
+          dueDate: editingTask.dueDate || null,
+        }),
+      });
 
-// Function to start editing a task
-const startEditTask = (task) => {
-  setEditingTask({
-    id: task._id,
-    description: task.description,
-    assignedTo: task.assignedTo,
-    dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
-  });
-};
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-// Function to save edited task
-const saveEditTask = async () => {
-  if (!editingTask.description || !editingTask.assignedTo) {
-    alert('Description and Roommate are required.');
-    return;
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/${editingTask.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        description: editingTask.description,
-        assignedTo: editingTask.assignedTo,
-        dueDate: editingTask.dueDate || null,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      setEditingTask(null);
+      fetchTasks();
+    } catch (err) {
+      console.error("Error updating task:", err);
+      alert('Failed to update task');
     }
+  };
 
-    // Clear editing state and refresh
+  const cancelEdit = () => {
     setEditingTask(null);
-    fetchTasks();
-  } catch (err) {
-    console.error("Error updating task:", err);
-    alert('Failed to update task');
-  }
-};
+  };
 
-// Function to cancel editing
-const cancelEdit = () => {
-  setEditingTask(null);
-};
-
-  // useEffect hook runs once after the component mounts
   useEffect(() => {
-    fetchTasks();
-  }, []); // Empty dependency array so it runs only once
+    if (user && token && user.householdId) {
+      fetchTasks();
+    }
+  }, [user, token, fetchTasks]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-500" />
+      </div>
+    );
+  }
+
+  if (!user || !token) {
+    return <AuthPages />;
+  }
+
+  if (!user.householdId) {
+    return <HouseholdSetup />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
         
-        {/* Header and Welcome Message */}
-        <header className="py-6 text-center">
-          <h1 className="text-5xl font-extrabold text-indigo-700 tracking-tight flex items-center justify-center">
-            <Home className="w-10 h-10 mr-3 text-indigo-500" />
-            RoomSync
-          </h1>
-          <p className="mt-2 text-xl text-gray-600">Shared Household Task Manager</p>
+        <header className="py-6">
+          <div className="flex justify-between items-center">
+            <div className="flex-1">
+              <h1 className="text-5xl font-extrabold text-indigo-700 tracking-tight flex items-center">
+                <Home className="w-10 h-10 mr-3 text-indigo-500" />
+                RoomSync
+              </h1>
+              <p className="mt-2 text-xl text-gray-600">
+                {user.householdId?.name || 'Shared Household Task Manager'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">Welcome, <span className="font-semibold">{user.name}</span></p>
+              {user.householdId?.roomCode && (
+                <p className="text-xs text-gray-500">Room Code: <span className="font-mono font-bold">{user.householdId.roomCode}</span></p>
+              )}
+              <button
+                onClick={logout}
+                className="mt-2 text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+          </div>
         </header>
 
-        {/* Main Content Area */}
         <main className="mt-8">
-
-          {/* Task Creation Form */}
           <div className="mb-10">
-              <AddTaskForm onTaskAdded={fetchTasks} />
+              <AddTaskForm onTaskAdded={fetchTasks} token={token} />
           </div>
 
           <h2 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-2 flex items-center">
@@ -675,7 +710,6 @@ const cancelEdit = () => {
             Current Chores ({tasks.filter(t => !t.isCompleted).length} pending)
           </h2>
 
-          {/* Loading, Error, or Task List */}
           {loading ? (
             <div className="flex justify-center items-center h-48 bg-white rounded-xl shadow-lg">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
@@ -693,27 +727,25 @@ const cancelEdit = () => {
           ) : (
             <div className="space-y-4">
               {tasks.map((task) => (
-              <TaskItem 
-              key={task._id} 
-              task={task} 
-              onToggleComplete={toggleTaskComplete}
-              onDelete={deleteTask}
-              onEdit={startEditTask}
-              editingTask={editingTask}
-              onSaveEdit={saveEditTask}
-              onCancelEdit={cancelEdit}
-              onEditChange={setEditingTask}
-            />
+                <TaskItem 
+                  key={task._id} 
+                  task={task} 
+                  onToggleComplete={toggleTaskComplete}
+                  onDelete={deleteTask}
+                  onEdit={startEditTask}
+                  editingTask={editingTask}
+                  onSaveEdit={saveEditTask}
+                  onCancelEdit={cancelEdit}
+                  onEditChange={setEditingTask}
+                />
               ))}
             </div>
           )}
 
-          {/* Bill Splitting Calculator */}
           <div className="mt-10">
             <BillSplitter />
           </div>
 
-          {/* Placeholder for future features */}
           <div className="mt-10 pt-6 border-t">
             <p className="text-center text-gray-500 text-sm">
               More features coming soon
